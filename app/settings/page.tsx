@@ -24,6 +24,12 @@ export default function SettingsPage() {
         return;
       }
 
+      // Validate risk:reward ratio
+      if (formData.minRiskReward > formData.maxRiskReward) {
+        setError('Min Risk:Reward must be less than or equal to Max Risk:Reward');
+        return;
+      }
+
       setSettings(formData);
       setSaved(true);
       setError(null);

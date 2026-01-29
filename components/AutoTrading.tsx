@@ -55,9 +55,8 @@ export function AutoTrading({
     return () => clearInterval(timer);
   }, [nextRefreshIn]);
 
-  // Calculate win rate
-  const totalTrades = sessionState.tradesExecutedToday;
-  const winRate = totalTrades > 0 
+  // Calculate win rate (simplified - assumes losses are recent)
+  const winRate = totalTrades > 0 && totalTrades > sessionState.consecutiveLosses
     ? Math.round(((totalTrades - sessionState.consecutiveLosses) / totalTrades) * 100) 
     : 0;
 

@@ -83,10 +83,10 @@ export function determineTrendBias(candles30m: Candle[]): TrendBias {
 
   if (priceAboveEMA && higherHighs > lowerLows) {
     bias = 'bullish';
-    confidence = Math.min(((higherHighs / recentCandles.length) * 100), 100);
+    confidence = Math.min(((higherHighs / (recentCandles.length - 1)) * 100), 100);
   } else if (!priceAboveEMA && lowerLows > higherHighs) {
     bias = 'bearish';
-    confidence = Math.min(((lowerLows / recentCandles.length) * 100), 100);
+    confidence = Math.min(((lowerLows / (recentCandles.length - 1)) * 100), 100);
   } else {
     confidence = 30; // Low confidence for ranging market
   }
@@ -346,7 +346,7 @@ export function analyze1mSignals(
       const direction = currentPrice > level ? 'long' : 'short';
       if ((direction === 'long' && trendBias === 'bullish') || 
           (direction === 'short' && trendBias === 'bearish')) {
-        if (80 > bestSignal.confidence) {
+        if (bestSignal.confidence < 80) {
           bestSignal = {
             type: 'break_retest',
             direction,
@@ -362,7 +362,7 @@ export function analyze1mSignals(
       const direction = currentPrice > level ? 'long' : 'short';
       if ((direction === 'long' && trendBias === 'bullish') || 
           (direction === 'short' && trendBias === 'bearish')) {
-        if (75 > bestSignal.confidence) {
+        if (bestSignal.confidence < 75) {
           bestSignal = {
             type: 'liquidity_sweep',
             direction,
@@ -380,7 +380,7 @@ export function analyze1mSignals(
     const direction = engulfing === 'bullish' ? 'long' : 'short';
     if ((direction === 'long' && trendBias === 'bullish') || 
         (direction === 'short' && trendBias === 'bearish')) {
-      if (70 > bestSignal.confidence) {
+      if (bestSignal.confidence < 70) {
         bestSignal = {
           type: 'engulfing',
           direction,
@@ -397,7 +397,7 @@ export function analyze1mSignals(
     const direction = trendlineBreak === 'bullish' ? 'long' : 'short';
     if ((direction === 'long' && trendBias === 'bullish') || 
         (direction === 'short' && trendBias === 'bearish')) {
-      if (65 > bestSignal.confidence) {
+      if (bestSignal.confidence < 65) {
         bestSignal = {
           type: 'trendline_break',
           direction,
