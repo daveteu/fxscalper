@@ -30,49 +30,6 @@ export default function TradePage() {
     // Positions will auto-refresh via hook
   };
 
-  // Perform market analysis
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const performAnalysis = useCallback(async () => {
-    if (!settings.oandaApiKey || !settings.oandaAccountId) {
-      return;
-    }
-
-    // Check if pair is in preferred list
-    if (!settings.preferredPairs.includes(selectedPair)) {
-      return;
-    }
-
-    setIsAnalyzing(true);
-    
-    try {
-      const client = createOandaClient(
-        settings.oandaApiKey,
-        settings.oandaAccountId,
-        settings.accountType
-      );
-
-      // Fetch candles for all timeframes
-      const [candles30m, candles15m, candles1m] = await Promise.all([
-        client.getCandles(selectedPair, 'M30', 100),
-        client.getCandles(selectedPair, 'M15', 100),
-        client.getCandles(selectedPair, 'M1', 100),
-      ]);
-
-      // Analyze market
-      const analysis = analyzeMarket(selectedPair, candles30m, candles15m, candles1m);
-      setCurrentAnalysis(analysis);
-
-      // Auto-execute if conditions are met
-      if (settings.autoTradingEnabled && shouldExecuteTrade(analysis)) {
-        await executeAutoTrade(analysis, client);
-      }
-    } catch (error) {
-      console.error('Analysis failed:', error);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [selectedPair, settings, sessionState, shouldExecuteTrade, executeAutoTrade]);
-
   // Check if should execute trade
   const shouldExecuteTrade = useCallback((analysis: MultiTimeframeAnalysis): boolean => {
     // Session must be active
@@ -120,7 +77,7 @@ export default function TradePage() {
   }, [sessionState, settings, checklist, updateSessionState]);
 
   // Execute automatic trade
-  const executeAutoTrade = useCallback(async (analysis: MultiTimeframeAnalysis, client: typeof import('@/lib/oanda').OandaClient) => {
+  const executeAutoTrade = useCallback(async (analysis: MultiTimeframeAnalysis, client: import('@/lib/oanda').OandaClient) => {
     try {
       // Get account balance
       const account = await client.getAccount();
@@ -163,6 +120,49 @@ export default function TradePage() {
       console.error('Auto-trade execution failed:', error);
     }
   }, [selectedPair, settings, sessionState, addActiveTrade, updateSessionState]);
+
+  // Perform market analysis
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const performAnalysis = useCallback(async () => {
+    if (!settings.oandaApiKey || !settings.oandaAccountId) {
+      return;
+    }
+
+    // Check if pair is in preferred list
+    if (!settings.preferredPairs.includes(selectedPair)) {
+      return;
+    }
+
+    setIsAnalyzing(true);
+    
+    try {
+      const client = createOandaClient(
+        settings.oandaApiKey,
+        settings.oandaAccountId,
+        settings.accountType
+      );
+
+      // Fetch candles for all timeframes
+      const [candles30m, candles15m, candles1m] = await Promise.all([
+        client.getCandles(selectedPair, 'M30', 100),
+        client.getCandles(selectedPair, 'M15', 100),
+        client.getCandles(selectedPair, 'M1', 100),
+      ]);
+
+      // Analyze market
+      const analysis = analyzeMarket(selectedPair, candles30m, candles15m, candles1m);
+      setCurrentAnalysis(analysis);
+
+      // Auto-execute if conditions are met
+      if (settings.autoTradingEnabled && shouldExecuteTrade(analysis)) {
+        await executeAutoTrade(analysis, client);
+      }
+    } catch (error) {
+      console.error('Analysis failed:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [selectedPair, settings, shouldExecuteTrade, executeAutoTrade]);
 
   // Toggle auto-trading
   const handleToggleAutoTrading = () => {
