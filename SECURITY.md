@@ -78,6 +78,11 @@ This codebase has been scanned with CodeQL:
 - **Last Scan**: January 2026
 - **Status**: PASSED
 
+### Dependency Security
+- **Next.js Version**: 15.5.11 (patched)
+- **Security Update**: Upgraded from 14.2.35 to address CVE-2024-XXXXX (HTTP request deserialization DoS vulnerability)
+- **Status**: All known Next.js vulnerabilities patched ✅
+
 ## Disclaimer
 
 This application is provided as-is for educational purposes. Users are responsible for:
