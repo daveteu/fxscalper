@@ -2,13 +2,29 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { StoreState, Settings, JournalEntry, ChecklistItem, Trade } from '@/types';
+import type { StoreState, Settings, JournalEntry, ChecklistItem, Trade, SessionState } from '@/types';
 
 const defaultSettings: Settings = {
   oandaApiKey: '',
   oandaAccountId: '',
   accountType: 'practice',
   openaiApiKey: '',
+  autoTradingEnabled: false,
+  autoTradingRefreshInterval: 30,
+  maxTradesPerSession: 5,
+  riskPercentage: 0.5,
+  minRiskReward: 1.5,
+  maxRiskReward: 2.0,
+  enableThreeStrikeRule: true,
+  preferredPairs: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/JPY'],
+};
+
+const defaultSessionState: SessionState = {
+  consecutiveLosses: 0,
+  tradesExecutedToday: 0,
+  autoTradingStopped: false,
+  lastTradeTime: null,
+  sessionDate: new Date().toISOString().split('T')[0],
 };
 
 const defaultChecklist: ChecklistItem[] = [
@@ -40,6 +56,7 @@ export const useStore = create<StoreState>()(
       journalEntries: [],
       checklist: defaultChecklist,
       activeTrades: [],
+      sessionState: defaultSessionState,
 
       setSettings: (settings: Settings) =>
         set({ settings }),
@@ -76,6 +93,14 @@ export const useStore = create<StoreState>()(
         set((state) => ({
           activeTrades: state.activeTrades.filter((trade) => trade.id !== id),
         })),
+
+      updateSessionState: (updates: Partial<SessionState>) =>
+        set((state) => ({
+          sessionState: { ...state.sessionState, ...updates },
+        })),
+
+      resetSessionState: () =>
+        set({ sessionState: { ...defaultSessionState, sessionDate: new Date().toISOString().split('T')[0] } }),
     }),
     {
       name: 'fxscalper-storage',
