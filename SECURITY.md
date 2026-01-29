@@ -80,8 +80,13 @@ This codebase has been scanned with CodeQL:
 
 ### Dependency Security
 - **Next.js Version**: 15.5.11 (patched)
-- **Security Update**: Upgraded from 14.2.35 to address CVE-2024-XXXXX (HTTP request deserialization DoS vulnerability)
-- **Status**: All known Next.js vulnerabilities patched ✅
+- **Security Updates**: 
+  - ✅ **Fixed**: CVE-2024-XXXXX - HTTP request deserialization DoS vulnerability (upgraded from 14.2.35)
+  - ℹ️ **Known**: GHSA-5f7q-jpqc-wp7h - Unbounded Memory Consumption via PPR Resume Endpoint (Moderate severity)
+    - **Impact**: Low - Application does not use experimental Partial Prerendering (PPR) features
+    - **Mitigation**: Feature not enabled; vulnerability requires PPR to be active
+    - **Future**: Will upgrade to Next.js 16.x when stable and tested
+- **Status**: Critical vulnerabilities patched ✅
 
 ## Disclaimer
 
