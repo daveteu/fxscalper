@@ -1,11 +1,13 @@
 # Clean Edge Scalper
 
-A professional forex scalping web application with real-time Oanda integration and automated trading capabilities.
+A professional forex scalping web application with real-time Oanda integration and **automated trading capabilities**.
 
 ## 🚀 Features
 
 - ✅ Real-time forex price data from Oanda
-- ✅ Automated trade execution on practice accounts
+- ✅ **Automated trade execution with multi-timeframe analysis**
+- ✅ **AI-powered Clean Edge scalping strategy**
+- ✅ **3-strike rule and safety controls**
 - ✅ Live position monitoring with P&L tracking
 - ✅ Multi-timeframe chart analysis (30m/15m/1m)
 - ✅ Position size calculator (units-based)
@@ -79,6 +81,17 @@ npm start
 
 ⚠️ **Security Notice**: API keys are stored in browser localStorage. See [SECURITY.md](SECURITY.md) for details.
 
+## 📖 Documentation
+
+For comprehensive usage instructions, including the auto-trading system guide, see [USAGE.md](USAGE.md).
+
+**Quick Links:**
+- [Getting Started](USAGE.md#getting-started)
+- [Auto-Trading System Guide](USAGE.md#auto-trading-system)
+- [Manual Trading Guide](USAGE.md#manual-trading)
+- [Best Practices](USAGE.md#best-practices)
+- [Troubleshooting](USAGE.md#troubleshooting)
+
 ### 2. Trading Workflow
 
 #### Dashboard
@@ -104,10 +117,55 @@ npm start
 
 #### Trade (Live Trading)
 - Execute market orders (buy/sell)
+- **Auto-Trading System** with multi-timeframe analysis:
+  - 30m trend detection (EMA200, price structure)
+  - 15m zone identification (support/resistance)
+  - 1m entry signals (break & retest, liquidity sweep, engulfing, trendline break)
+  - Automatic trade execution when conditions met
+  - 3-strike rule protection
+  - Session statistics and monitoring
 - AI trade analysis (if OpenAI configured)
 - Real-time position monitoring
 - Live P&L tracking
 - One-click position closing
+
+## 🤖 Auto-Trading System
+
+The Clean Edge Scalper includes a sophisticated auto-trading system that executes trades automatically based on multi-timeframe analysis.
+
+### Key Features
+
+**Multi-Timeframe Analysis**
+- **30m**: Trend direction (EMA200, higher highs/lower lows)
+- **15m**: Kill zone identification (support/resistance levels)
+- **1m**: Entry signals (break & retest, liquidity sweep, engulfing, trendline break)
+
+**Safety Controls**
+- 3-strike rule (stops after 3 consecutive losses)
+- Max trades per session limit
+- 2-minute cooldown between trades
+- 80% checklist completion requirement
+- Session time enforcement
+- Position sizing based on 0.5% risk
+
+**Configuration Options**
+- Refresh interval: 15-60 seconds
+- Risk per trade: 0.1-1.0%
+- Risk:reward ratio: 1.5-2.0R
+- Preferred pairs selection
+- Emergency stop button
+
+### ⚠️ Auto-Trading Warnings
+
+- **Always start with a practice account**
+- Monitor auto-trading closely, especially initially
+- Understand the strategy before enabling
+- Keep 3-strike rule enabled
+- Use conservative risk settings (0.5% or lower)
+- Review all executed trades in the journal
+- Be prepared to use emergency stop if needed
+
+For detailed auto-trading setup and usage, see [USAGE.md - Auto-Trading System](USAGE.md#auto-trading-system).
 
 ## 📋 Trading Rules
 
@@ -129,6 +187,16 @@ npm start
 ✅ Checklist requirement  
 ✅ Real-time position monitoring  
 ✅ Automatic journal entries  
+✅ 3-strike rule for auto-trading  
+✅ Trade cooldown periods  
+✅ Position sizing automation  
+
+## 📚 Learning Resources
+
+- **[USAGE.md](USAGE.md)**: Comprehensive user guide covering all features
+- **[SECURITY.md](SECURITY.md)**: Security best practices and considerations
+- **Strategy Guide**: Multi-timeframe Clean Edge scalping methodology
+- **Auto-Trading Guide**: Setup and monitoring automated execution
 
 ## 🛠 Tech Stack
 
@@ -158,10 +226,19 @@ See [SECURITY.md](SECURITY.md) for detailed security considerations.
 
 - Trading forex involves substantial risk of loss
 - Past performance does not guarantee future results
+- **Auto-trading can execute multiple trades rapidly - use with extreme caution**
 - Always use a practice account before trading with real money
+- Monitor auto-trading closely and be ready to stop it
 - Users are responsible for their own trading decisions
 - The authors assume no liability for trading losses
 - Ensure compliance with local financial regulations
+
+**Recommended Workflow for Beginners:**
+1. Start with practice account only
+2. Use manual trading for 2-4 weeks
+3. Test auto-trading on practice for 2+ weeks
+4. Only then consider live trading with minimal funds
+5. Never trade money you cannot afford to lose
 
 ## 📄 License
 

@@ -107,6 +107,22 @@ export interface Settings {
   oandaAccountId: string;
   accountType: 'practice' | 'live';
   openaiApiKey: string;
+  autoTradingEnabled: boolean;
+  autoTradingRefreshInterval: number;
+  maxTradesPerSession: number;
+  riskPercentage: number;
+  minRiskReward: number;
+  maxRiskReward: number;
+  enableThreeStrikeRule: boolean;
+  preferredPairs: string[];
+}
+
+export interface SessionState {
+  consecutiveLosses: number;
+  tradesExecutedToday: number;
+  autoTradingStopped: boolean;
+  lastTradeTime: string | null;
+  sessionDate: string;
 }
 
 export interface StoreState {
@@ -115,6 +131,7 @@ export interface StoreState {
   journalEntries: JournalEntry[];
   checklist: ChecklistItem[];
   activeTrades: Trade[];
+  sessionState: SessionState;
   setSettings: (settings: Settings) => void;
   setSelectedPair: (pair: string) => void;
   addJournalEntry: (entry: JournalEntry) => void;
@@ -123,6 +140,8 @@ export interface StoreState {
   updateChecklist: (checklist: ChecklistItem[]) => void;
   addActiveTrade: (trade: Trade) => void;
   removeActiveTrade: (id: string) => void;
+  updateSessionState: (updates: Partial<SessionState>) => void;
+  resetSessionState: () => void;
 }
 
 export const PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/JPY'] as const;
@@ -130,3 +149,47 @@ export type Pair = typeof PAIRS[number];
 
 export const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1'] as const;
 export type Timeframe = typeof TIMEFRAMES[number];
+
+// Auto-trading types
+export interface TrendBias {
+  bias: 'bullish' | 'bearish' | 'ranging';
+  ema200: number | null;
+  priceAboveEMA: boolean | null;
+  confidence: number;
+}
+
+export interface KeyZones {
+  support: number[];
+  resistance: number[];
+}
+
+export interface EntrySignal {
+  type: 'break_retest' | 'liquidity_sweep' | 'engulfing' | 'trendline_break' | 'none';
+  direction: 'long' | 'short' | null;
+  confidence: number;
+  price: number | null;
+}
+
+export interface MultiTimeframeAnalysis {
+  pair: string;
+  timestamp: string;
+  trend30m: TrendBias;
+  zones15m: KeyZones;
+  signal1m: EntrySignal;
+  priceInZone: boolean;
+  overallScore: number;
+  recommendation: 'strong_buy' | 'buy' | 'strong_sell' | 'sell' | 'wait';
+}
+
+export interface AutoTradeExecution {
+  id: string;
+  pair: string;
+  direction: 'long' | 'short';
+  entryPrice: number;
+  stopLossPips: number;
+  takeProfitPips: number;
+  units: number;
+  analysis: MultiTimeframeAnalysis;
+  timestamp: string;
+  result?: 'win' | 'loss' | 'open';
+}
