@@ -22,7 +22,7 @@ interface TradeExecutorProps {
 
 export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
   const { price, loading: priceLoading } = useOandaPrice(pair);
-  const { settings, checklist, addActiveTrade, addJournalEntry } = useStore();
+  const { settings, checklist, addActiveTrade } = useStore();
   const [units, setUnits] = useState<string>('');
   const [stopLossPips, setStopLossPips] = useState<string>('7');
   const [takeProfitPips, setTakeProfitPips] = useState<string>('10.5');

@@ -29,7 +29,7 @@ export default function SettingsPage() {
       setError(null);
 
       setTimeout(() => setSaved(false), 3000);
-    } catch (err) {
+    } catch {
       setError('Failed to save settings');
     }
   };

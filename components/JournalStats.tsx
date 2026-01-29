@@ -107,7 +107,7 @@ export function JournalStats({ entries }: JournalStatsProps) {
           <div className="mt-6 p-4 bg-primary/10 border border-primary/20 rounded-md">
             <div className="font-medium mb-2">📊 Milestone Reached!</div>
             <div className="text-sm text-muted-foreground">
-              You've completed 50+ trades. Review your statistics to identify patterns and improve your strategy.
+              You&apos;ve completed 50+ trades. Review your statistics to identify patterns and improve your strategy.
             </div>
           </div>
         )}

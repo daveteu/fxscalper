@@ -1,6 +1,5 @@
 // Singapore timezone session logic
 
-import { format, parse } from 'date-fns';
 import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
 import type { Session } from '@/types';
 

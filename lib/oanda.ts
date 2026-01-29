@@ -72,14 +72,17 @@ export class OandaClient {
       `/v3/instruments/${instrument}/candles?granularity=${timeframe}&count=${count}`
     );
 
-    return data.candles.map((candle: any) => ({
-      time: candle.time,
-      open: parseFloat(candle.mid.o),
-      high: parseFloat(candle.mid.h),
-      low: parseFloat(candle.mid.l),
-      close: parseFloat(candle.mid.c),
-      volume: candle.volume,
-    }));
+    return data.candles.map((candle: Record<string, unknown>) => {
+      const mid = candle.mid as Record<string, string>;
+      return {
+        time: candle.time as string,
+        open: parseFloat(mid.o),
+        high: parseFloat(mid.h),
+        low: parseFloat(mid.l),
+        close: parseFloat(mid.c),
+        volume: candle.volume as number,
+      };
+    });
   }
 
   // Get current price
@@ -105,7 +108,7 @@ export class OandaClient {
   ): Promise<Trade> {
     const instrument = this.formatInstrument(pair);
     
-    const orderSpec: any = {
+    const orderSpec: Record<string, unknown> = {
       type: 'MARKET',
       instrument,
       units: units.toString(),
