@@ -20,6 +20,9 @@ interface TradeExecutorProps {
   onTradeExecuted?: () => void;
 }
 
+// Constants
+const CHECKLIST_COMPLETION_THRESHOLD = 0.8; // 80% of checklist items must be completed
+
 export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
   const { price, loading: priceLoading } = useOandaPrice(pair);
   const { settings, checklist, addActiveTrade } = useStore();
@@ -31,11 +34,12 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<TradeAnalysisResult | null>(null);
+  const [tradeDirection, setTradeDirection] = useState<'long' | 'short'>('long');
 
   // Validation
   const sessionActive = isActiveSession();
-  const checklistCompletion = (checklist.filter((i) => i.checked).length / checklist.length) * 100;
-  const checklistValid = checklistCompletion >= 80;
+  const checklistCompletion = (checklist.filter((i) => i.checked).length / checklist.length);
+  const checklistValid = checklistCompletion >= CHECKLIST_COMPLETION_THRESHOLD;
   
   const slNum = parseFloat(stopLossPips) || 0;
   const tpNum = parseFloat(takeProfitPips) || 0;
@@ -47,12 +51,13 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
   const canTrade = sessionActive && checklistValid && slValid && tpValid && unitsNum > 0 && 
                    settings.oandaApiKey && settings.oandaAccountId;
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (direction: 'long' | 'short') => {
     if (!settings.openaiApiKey) {
       setError('OpenAI API key not configured in settings');
       return;
     }
 
+    setTradeDirection(direction);
     setAnalyzing(true);
     setError(null);
 
@@ -61,7 +66,7 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
         {
           pair,
           timeframe: '1m',
-          direction: 'long', // This would be determined by the user
+          direction,
           entry: price?.bid || 0,
           stopLoss: slNum,
           takeProfit: tpNum,
@@ -158,7 +163,7 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Checklist Incomplete</AlertTitle>
             <AlertDescription>
-              Complete at least 80% of the checklist before trading. Current: {checklistCompletion.toFixed(0)}%
+              Complete at least 80% of the checklist before trading. Current: {(checklistCompletion * 100).toFixed(0)}%
             </AlertDescription>
           </Alert>
         )}
@@ -200,24 +205,42 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
 
         {/* AI Analysis */}
         {settings.openaiApiKey && (
-          <Button 
-            variant="outline" 
-            onClick={handleAnalyze} 
-            disabled={analyzing}
-            className="w-full"
-          >
-            {analyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4 mr-2" />
-                AI Trade Analysis
-              </>
-            )}
-          </Button>
+          <div className="grid grid-cols-2 gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => handleAnalyze('long')} 
+              disabled={analyzing}
+            >
+              {analyzing && tradeDirection === 'long' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Analyzing Buy...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analyze Buy Setup
+                </>
+              )}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleAnalyze('short')} 
+              disabled={analyzing}
+            >
+              {analyzing && tradeDirection === 'short' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Analyzing Sell...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Analyze Sell Setup
+                </>
+              )}
+            </Button>
+          </div>
         )}
 
         {analysis && (

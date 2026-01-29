@@ -47,24 +47,32 @@ export default function JournalPage() {
   };
 
   const handleExport = () => {
-    // Convert to CSV
+    // Convert to CSV with proper escaping
+    const escapeCSV = (value: string | number) => {
+      const str = String(value);
+      if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
     const headers = ['Date', 'Pair', 'Side', 'Entry', 'Exit', 'Units', 'Result', 'P&L', 'Pips', 'R Multiple', 'Setup', 'Notes'];
     const rows = journalEntries.map((entry) => [
-      format(new Date(entry.date), 'yyyy-MM-dd HH:mm'),
-      entry.pair,
-      entry.side,
-      entry.entry,
-      entry.exit,
-      entry.units,
-      entry.result,
-      entry.pnl.toFixed(2),
-      entry.pnlPips.toFixed(1),
-      entry.rMultiple.toFixed(2),
-      entry.setup,
-      entry.notes,
+      escapeCSV(format(new Date(entry.date), 'yyyy-MM-dd HH:mm')),
+      escapeCSV(entry.pair),
+      escapeCSV(entry.side),
+      escapeCSV(entry.entry),
+      escapeCSV(entry.exit),
+      escapeCSV(entry.units),
+      escapeCSV(entry.result),
+      escapeCSV(entry.pnl.toFixed(2)),
+      escapeCSV(entry.pnlPips.toFixed(1)),
+      escapeCSV(entry.rMultiple.toFixed(2)),
+      escapeCSV(entry.setup),
+      escapeCSV(entry.notes),
     ]);
 
-    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+    const csv = [headers.map(escapeCSV), ...rows].map((row) => row.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');

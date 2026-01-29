@@ -20,6 +20,19 @@ const SESSIONS = {
 // Get current session information
 export function getCurrentSession(): Session {
   const now = toZonedTime(new Date(), TIMEZONE);
+  const dayOfWeek = now.getDay();
+  
+  // Check if it's weekend (0 = Sunday, 6 = Saturday)
+  if (dayOfWeek === 0 || dayOfWeek === 6) {
+    return {
+      name: 'Closed',
+      active: false,
+      startTime: '',
+      endTime: '',
+      nextSessionStart: 'Market opens Monday at 15:00 SGT',
+    };
+  }
+
   const hour = now.getHours();
   const minute = now.getMinutes();
   const currentMinutes = hour * 60 + minute;

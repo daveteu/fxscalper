@@ -29,6 +29,12 @@ export function JournalEntryDialog({ open, onOpenChange, onSave, entry }: Journa
   const [setup, setSetup] = useState(entry?.setup || '');
   const [notes, setNotes] = useState(entry?.notes || '');
 
+  // Calculate R multiple with safe division
+  const calculateRMultiple = (pips: number, slPips: number): number => {
+    if (slPips === 0) return 0; // Avoid division by zero
+    return pips / slPips;
+  };
+
   const handleSave = () => {
     const entryNum = parseFloat(entryPrice);
     const exitNum = parseFloat(exitPrice);
@@ -42,9 +48,9 @@ export function JournalEntryDialog({ open, onOpenChange, onSave, entry }: Journa
     const pipValue = pair.includes('JPY') ? 0.00947 : 0.0001;
     const pnl = pips * unitsNum * pipValue;
 
-    // Calculate R multiple
+    // Calculate R multiple with safe division
     const slPips = Math.abs(entryNum - slNum) / (pair.includes('JPY') ? 0.01 : 0.0001);
-    const rMultiple = pips / slPips;
+    const rMultiple = calculateRMultiple(pips, slPips);
 
     // Determine result
     let result: 'win' | 'loss' | 'breakeven' = 'breakeven';

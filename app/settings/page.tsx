@@ -59,6 +59,14 @@ export default function SettingsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>Security Notice:</strong> API keys are stored in your browser&apos;s
+              localStorage without encryption. Only use this application on trusted devices
+              and never share your API keys.
+            </AlertDescription>
+          </Alert>
           <div className="space-y-2">
             <Label htmlFor="apiKey">API Key *</Label>
             <Input

@@ -29,12 +29,17 @@ export class OandaClient {
       
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
-        throw new Error(error.errorMessage || `Oanda API error: ${response.status}`);
+        const errorMessage = error.errorMessage || `HTTP ${response.status}: ${response.statusText}`;
+        // Don't log full error to avoid exposing API key
+        throw new Error(`Oanda API error (${endpoint}): ${errorMessage}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Oanda API request failed:', error);
+      // Ensure we don't expose API key in error logs
+      if (error instanceof Error) {
+        console.error('Oanda API request failed:', error.message);
+      }
       throw error;
     }
   }

@@ -70,7 +70,7 @@ Format response as JSON:
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4',
+        model: 'gpt-4-turbo',
         messages: [
           {
             role: 'system',
@@ -83,25 +83,30 @@ Format response as JSON:
         ],
         temperature: 0.7,
         max_tokens: 500,
+        response_format: { type: 'json_object' },
       }),
     });
 
     if (!response.ok) {
-      throw new Error('OpenAI API request failed');
+      throw new Error(`OpenAI API error: ${response.status}`);
     }
 
     const data = await response.json();
     const content = data.choices[0].message.content;
     
-    // Parse JSON response
-    const analysis = JSON.parse(content);
-    
-    return {
-      score: analysis.score,
-      recommendation: analysis.recommendation,
-      reasons: analysis.reasons || [],
-      warnings: analysis.warnings || [],
-    };
+    // Parse JSON response with error handling
+    try {
+      const analysis = JSON.parse(content);
+      
+      return {
+        score: analysis.score || 0,
+        recommendation: analysis.recommendation || 'neutral',
+        reasons: Array.isArray(analysis.reasons) ? analysis.reasons : [],
+        warnings: Array.isArray(analysis.warnings) ? analysis.warnings : [],
+      };
+    } catch {
+      throw new Error('Failed to parse AI analysis response');
+    }
   } catch (error) {
     console.error('OpenAI analysis failed:', error);
     throw new Error('Failed to analyze trade setup');
