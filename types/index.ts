@@ -11,6 +11,11 @@ export interface OandaAccount {
   balance: number;
   currency: string;
   unrealizedPL: number;
+  marginAvailable?: number;
+  marginUsed?: number;
+  marginRate?: number;
+  marginCallMarginUsed?: number;
+  positionValue?: number;
 }
 
 export interface Candle {
@@ -47,7 +52,10 @@ export interface Trade {
   instrument: string;
   units: number;
   price: number;
+  averageClosePrice?: number;
+  realizedPL?: number;
   time: string;
+  closeTime?: string;
   type: 'MARKET' | 'LIMIT' | 'STOP';
   stopLoss?: number;
   takeProfit?: number;
@@ -56,6 +64,8 @@ export interface Trade {
 export interface JournalEntry {
   id: string;
   date: string;
+  openTime: string;
+  closeTime: string | null;
   pair: string;
   side: 'long' | 'short';
   timeframe: string;
@@ -106,6 +116,7 @@ export interface Settings {
   oandaApiKey: string;
   oandaAccountId: string;
   accountType: 'practice' | 'live';
+  accountBalance: number;
   openaiApiKey: string;
   autoTradingEnabled: boolean;
   autoTradingRefreshInterval: number;
@@ -118,10 +129,13 @@ export interface Settings {
 }
 
 export interface SessionState {
-  consecutiveLosses: number;
+  consecutiveLosses: number; // Global counter (deprecated, kept for backward compatibility)
+  consecutiveLossesPerPair: Record<string, number>; // Per-pair consecutive losses for 3-strike rule
+  pairBlockedUntil: Record<string, string>; // Timestamp when each pair can trade again (60min timeout after 3 losses)
   tradesExecutedToday: number;
   autoTradingStopped: boolean;
-  lastTradeTime: string | null;
+  lastTradeTime: string | null; // Global fallback (deprecated)
+  lastTradeTimePerPair: Record<string, string>; // Per-pair cooldown tracking
   sessionDate: string;
 }
 
@@ -139,16 +153,23 @@ export interface StoreState {
   deleteJournalEntry: (id: string) => void;
   updateChecklist: (checklist: ChecklistItem[]) => void;
   addActiveTrade: (trade: Trade) => void;
+  setActiveTrades: (trades: Trade[]) => void;
   removeActiveTrade: (id: string) => void;
   updateSessionState: (updates: Partial<SessionState>) => void;
   resetSessionState: () => void;
 }
 
-export const PAIRS = ['EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/JPY'] as const;
-export type Pair = typeof PAIRS[number];
+export const PAIRS = [
+  'EUR/USD',
+  'GBP/USD',
+  'USD/JPY',
+  'AUD/USD',
+  'EUR/JPY',
+] as const;
+export type Pair = (typeof PAIRS)[number];
 
 export const TIMEFRAMES = ['M1', 'M5', 'M15', 'M30', 'H1'] as const;
-export type Timeframe = typeof TIMEFRAMES[number];
+export type Timeframe = (typeof TIMEFRAMES)[number];
 
 // Auto-trading types
 export interface TrendBias {
@@ -164,10 +185,18 @@ export interface KeyZones {
 }
 
 export interface EntrySignal {
-  type: 'break_retest' | 'liquidity_sweep' | 'engulfing' | 'trendline_break' | 'none';
+  type: 'break_retest' | 'liquidity_sweep' | 'engulfing' | 'none';
   direction: 'long' | 'short' | null;
   confidence: number;
   price: number | null;
+}
+
+export interface PriceStructure {
+  overlapScore: number; // 0-100: Lower = cleaner (less chop)
+  wickNoiseScore: number; // 0-100: Lower = cleaner (less noise)
+  swingClarityScore: number; // 0-100: Higher = clearer swings
+  atrCompressionScore: number; // 0-100: Higher = good volatility
+  structureScore: number; // 0-100: Overall structure quality
 }
 
 export interface MultiTimeframeAnalysis {
@@ -177,7 +206,8 @@ export interface MultiTimeframeAnalysis {
   zones15m: KeyZones;
   signal1m: EntrySignal;
   priceInZone: boolean;
-  overallScore: number;
+  setupQualityScore: number; // Renamed from overallScore
+  priceStructure: PriceStructure; // NEW: Real structure analysis
   recommendation: 'strong_buy' | 'buy' | 'strong_sell' | 'sell' | 'wait';
 }
 

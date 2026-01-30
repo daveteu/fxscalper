@@ -3,12 +3,25 @@
 import { useState, useEffect } from 'react';
 import { SessionTimer } from '@/components/SessionTimer';
 import { MultiTimeframeChart } from '@/components/MultiTimeframeChart';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AccountInfo } from '@/components/AccountInfo';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, AlertCircle, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import {
+  Loader2,
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from 'lucide-react';
 import { useStore } from '@/lib/store';
 import { createOandaClient } from '@/lib/oanda';
 import { analyzeMarket } from '@/lib/autoTrading';
@@ -48,14 +61,21 @@ export default function DashboardPage() {
         setCandles30m(data30m);
         setCandles15m(data15m);
         setCandles1m(data1m);
-        
+
         // Perform analysis
-        const marketAnalysis = analyzeMarket(selectedPair, data30m, data15m, data1m);
+        const marketAnalysis = analyzeMarket(
+          selectedPair,
+          data30m,
+          data15m,
+          data1m
+        );
         setAnalysis(marketAnalysis);
-        
+
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch candles');
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch candles'
+        );
       } finally {
         setLoading(false);
       }
@@ -65,18 +85,26 @@ export default function DashboardPage() {
     const interval = setInterval(fetchCandles, 60000); // Refresh every minute
 
     return () => clearInterval(interval);
-  }, [selectedPair, settings.oandaApiKey, settings.oandaAccountId, settings.accountType]);
+  }, [
+    selectedPair,
+    settings.oandaApiKey,
+    settings.oandaAccountId,
+    settings.accountType,
+  ]);
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-4xl font-bold mb-2">Clean Edge Scalper</h1>
         <p className="text-muted-foreground">
-          Professional forex scalping with real-time market data and automated trading
+          Professional forex scalping with real-time market data and automated
+          trading
         </p>
       </div>
 
       <SessionTimer />
+
+      <AccountInfo variant="compact" />
 
       {/* Auto-Trading Status Card */}
       {settings.autoTradingEnabled && (
@@ -91,9 +119,10 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              Automatic trade execution is enabled. The system will analyze market conditions 
-              every {settings.autoTradingRefreshInterval} seconds and execute trades when valid 
-              setups are detected. Go to the Trade page to monitor activity.
+              Automatic trade execution is enabled. The system will analyze
+              market conditions every {settings.autoTradingRefreshInterval}{' '}
+              seconds and execute trades when valid setups are detected. Go to
+              the Trade page to monitor activity.
             </p>
           </CardContent>
         </Card>
@@ -130,19 +159,25 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <Badge 
+                <Badge
                   variant={
-                    analysis.trend30m.bias === 'bullish' 
-                      ? 'default' 
+                    analysis.trend30m.bias === 'bullish'
+                      ? 'default'
                       : analysis.trend30m.bias === 'bearish'
-                      ? 'destructive'
-                      : 'secondary'
+                        ? 'destructive'
+                        : 'secondary'
                   }
                   className="text-lg px-4 py-2"
                 >
-                  {analysis.trend30m.bias === 'bullish' && <TrendingUp className="h-4 w-4 mr-2" />}
-                  {analysis.trend30m.bias === 'bearish' && <TrendingDown className="h-4 w-4 mr-2" />}
-                  {analysis.trend30m.bias === 'ranging' && <Minus className="h-4 w-4 mr-2" />}
+                  {analysis.trend30m.bias === 'bullish' && (
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                  )}
+                  {analysis.trend30m.bias === 'bearish' && (
+                    <TrendingDown className="h-4 w-4 mr-2" />
+                  )}
+                  {analysis.trend30m.bias === 'ranging' && (
+                    <Minus className="h-4 w-4 mr-2" />
+                  )}
                   {analysis.trend30m.bias.toUpperCase()}
                 </Badge>
               </div>
@@ -154,11 +189,13 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">15m Kill Zone</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                15m Kill Zone
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <Badge 
+                <Badge
                   variant={analysis.priceInZone ? 'default' : 'secondary'}
                   className="text-lg px-4 py-2"
                 >
@@ -166,18 +203,22 @@ export default function DashboardPage() {
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                {analysis.zones15m.support.length + analysis.zones15m.resistance.length} levels detected
+                {analysis.zones15m.support.length +
+                  analysis.zones15m.resistance.length}{' '}
+                levels detected
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">1m Entry Signal</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                1m Entry Signal
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
-                <Badge 
+                <Badge
                   variant={
                     analysis.signal1m.type !== 'none'
                       ? analysis.signal1m.direction === 'long'
@@ -187,7 +228,9 @@ export default function DashboardPage() {
                   }
                   className="text-lg px-4 py-2"
                 >
-                  {analysis.signal1m.type === 'none' ? 'NO SIGNAL' : analysis.signal1m.type.replace('_', ' ').toUpperCase()}
+                  {analysis.signal1m.type === 'none'
+                    ? 'NO SIGNAL'
+                    : analysis.signal1m.type.replace('_', ' ').toUpperCase()}
                 </Badge>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
@@ -212,7 +255,9 @@ export default function DashboardPage() {
       ) : (
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold mb-4">Multi-Timeframe Analysis</h2>
+            <h2 className="text-2xl font-bold mb-4">
+              Multi-Timeframe Analysis
+            </h2>
             <div className="grid gap-6">
               <MultiTimeframeChart
                 pair={selectedPair}

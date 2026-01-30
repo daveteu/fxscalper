@@ -1,7 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -9,12 +15,18 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { useStore } from '@/lib/store';
+import { PAIRS } from '@/types';
 
 export default function SettingsPage() {
   const { settings, setSettings } = useStore();
   const [formData, setFormData] = useState(settings);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync formData with settings when they load from MongoDB
+  useEffect(() => {
+    setFormData(settings);
+  }, [settings]);
 
   const handleSave = () => {
     try {
@@ -26,7 +38,9 @@ export default function SettingsPage() {
 
       // Validate risk:reward ratio
       if (formData.minRiskReward > formData.maxRiskReward) {
-        setError('Min Risk:Reward must be less than or equal to Max Risk:Reward');
+        setError(
+          'Min Risk:Reward must be less than or equal to Max Risk:Reward'
+        );
         return;
       }
 
@@ -68,9 +82,9 @@ export default function SettingsPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Security Notice:</strong> API keys are stored in your browser&apos;s
-              localStorage without encryption. Only use this application on trusted devices
-              and never share your API keys.
+              <strong>Security Notice:</strong> API keys are stored in your
+              browser&apos;s localStorage without encryption. Only use this
+              application on trusted devices and never share your API keys.
             </AlertDescription>
           </Alert>
           <div className="space-y-2">
@@ -143,9 +157,9 @@ export default function SettingsPage() {
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Warning:</strong> Auto-trading will execute trades automatically based 
-              on the Clean Edge strategy. Always start with a practice account and monitor 
-              the system closely.
+              <strong>Warning:</strong> Auto-trading will execute trades
+              automatically based on the Clean Edge strategy. Always start with
+              a practice account and monitor the system closely.
             </AlertDescription>
           </Alert>
 
@@ -203,7 +217,7 @@ export default function SettingsPage() {
               id="maxTrades"
               type="number"
               min="1"
-              max="10"
+              max="50"
               value={formData.maxTradesPerSession}
               onChange={(e) =>
                 setFormData({
@@ -213,7 +227,7 @@ export default function SettingsPage() {
               }
             />
             <p className="text-sm text-muted-foreground">
-              Maximum number of trades per trading session (1-10)
+              Maximum number of trades per trading session (1-50)
             </p>
           </div>
 
@@ -306,8 +320,11 @@ export default function SettingsPage() {
           <div className="space-y-2">
             <Label>Preferred Currency Pairs</Label>
             <div className="grid grid-cols-2 gap-2">
-              {['EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/JPY'].map((pair) => (
-                <div key={pair} className="flex items-center space-x-2 p-2 border rounded">
+              {PAIRS.map((pair) => (
+                <div
+                  key={pair}
+                  className="flex items-center space-x-2 p-2 border rounded"
+                >
                   <input
                     type="checkbox"
                     id={`pair-${pair}`}
@@ -323,7 +340,10 @@ export default function SettingsPage() {
                     }}
                     className="rounded"
                   />
-                  <label htmlFor={`pair-${pair}`} className="text-sm cursor-pointer">
+                  <label
+                    htmlFor={`pair-${pair}`}
+                    className="text-sm cursor-pointer"
+                  >
                     {pair}
                   </label>
                 </div>
@@ -373,6 +393,22 @@ export default function SettingsPage() {
       <div className="flex items-center gap-4">
         <Button onClick={handleSave} size="lg">
           Save Settings
+        </Button>
+        <Button
+          onClick={() => {
+            if (
+              confirm(
+                'This will reset all settings and pairs to defaults. Continue?'
+              )
+            ) {
+              localStorage.clear();
+              window.location.reload();
+            }
+          }}
+          variant="outline"
+          size="lg"
+        >
+          Reset to Defaults
         </Button>
         {saved && (
           <div className="flex items-center gap-2 text-green-500">

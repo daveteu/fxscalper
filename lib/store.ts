@@ -2,12 +2,20 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { StoreState, Settings, JournalEntry, ChecklistItem, Trade, SessionState } from '@/types';
+import type {
+  StoreState,
+  Settings,
+  JournalEntry,
+  ChecklistItem,
+  Trade,
+  SessionState,
+} from '@/types';
 
 const defaultSettings: Settings = {
   oandaApiKey: '',
   oandaAccountId: '',
   accountType: 'practice',
+  accountBalance: 100000,
   openaiApiKey: '',
   autoTradingEnabled: false,
   autoTradingRefreshInterval: 30,
@@ -16,37 +24,49 @@ const defaultSettings: Settings = {
   minRiskReward: 1.5,
   maxRiskReward: 2.0,
   enableThreeStrikeRule: true,
-  preferredPairs: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'EUR/JPY'],
+  preferredPairs: ['EUR/USD', 'GBP/USD', 'USD/JPY', 'AUD/USD', 'EUR/JPY'],
+};
+
+// Load settings from MongoDB
+const loadSettings = async (): Promise<Settings> => {
+  try {
+    const response = await fetch('/api/settings?userId=default');
+    if (response.ok) {
+      const data = await response.json();
+      return data.settings;
+    }
+  } catch (error) {
+    console.error('Failed to load settings from MongoDB:', error);
+  }
+  return defaultSettings;
+};
+
+// Save settings to MongoDB
+const saveSettings = async (settings: Settings): Promise<void> => {
+  try {
+    await fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'default', ...settings }),
+    });
+  } catch (error) {
+    console.error('Failed to save settings to MongoDB:', error);
+  }
 };
 
 const defaultSessionState: SessionState = {
   consecutiveLosses: 0,
+  consecutiveLossesPerPair: {},
+  pairBlockedUntil: {},
   tradesExecutedToday: 0,
   autoTradingStopped: false,
   lastTradeTime: null,
+  lastTradeTimePerPair: {},
   sessionDate: new Date().toISOString().split('T')[0],
 };
 
-const defaultChecklist: ChecklistItem[] = [
-  // Trend & Setup (5 items)
-  { id: '1', label: '30m trend aligned with trade direction', checked: false, category: 'trend' },
-  { id: '2', label: '15m shows clear consolidation zone', checked: false, category: 'trend' },
-  { id: '3', label: 'Price at support/resistance level', checked: false, category: 'trend' },
-  { id: '4', label: 'EMA200 confirms trend', checked: false, category: 'trend' },
-  { id: '5', label: 'Clean price action structure', checked: false, category: 'trend' },
-  
-  // Entry Signal (5 items)
-  { id: '6', label: '1m trigger candle confirmed', checked: false, category: 'entry' },
-  { id: '7', label: 'Entry at zone boundary', checked: false, category: 'entry' },
-  { id: '8', label: 'No major news in next 30 minutes', checked: false, category: 'entry' },
-  { id: '9', label: 'Spread is acceptable (<2 pips)', checked: false, category: 'entry' },
-  { id: '10', label: 'London or NY session active', checked: false, category: 'entry' },
-  
-  // Risk Control (3 items)
-  { id: '11', label: 'Stop loss 5-8 pips', checked: false, category: 'risk' },
-  { id: '12', label: 'Risk ≤ 0.5% of balance', checked: false, category: 'risk' },
-  { id: '13', label: 'Take profit 1.5-2R', checked: false, category: 'risk' },
-];
+// Checklist items are now hardcoded and evaluated automatically by market analysis
+// No manual management needed - safety vs quality separation handles everything
 
 export const useStore = create<StoreState>()(
   persist(
@@ -54,15 +74,15 @@ export const useStore = create<StoreState>()(
       settings: defaultSettings,
       selectedPair: 'EUR/USD',
       journalEntries: [],
-      checklist: defaultChecklist,
       activeTrades: [],
       sessionState: defaultSessionState,
 
-      setSettings: (settings: Settings) =>
-        set({ settings }),
+      setSettings: (settings: Settings) => {
+        set({ settings });
+        saveSettings(settings);
+      },
 
-      setSelectedPair: (pair: string) =>
-        set({ selectedPair: pair }),
+      setSelectedPair: (pair: string) => set({ selectedPair: pair }),
 
       addJournalEntry: (entry: JournalEntry) =>
         set((state) => ({
@@ -78,16 +98,17 @@ export const useStore = create<StoreState>()(
 
       deleteJournalEntry: (id: string) =>
         set((state) => ({
-          journalEntries: state.journalEntries.filter((entry) => entry.id !== id),
+          journalEntries: state.journalEntries.filter(
+            (entry) => entry.id !== id
+          ),
         })),
-
-      updateChecklist: (checklist: ChecklistItem[]) =>
-        set({ checklist }),
 
       addActiveTrade: (trade: Trade) =>
         set((state) => ({
           activeTrades: [...state.activeTrades, trade],
         })),
+
+      setActiveTrades: (trades: Trade[]) => set({ activeTrades: trades }),
 
       removeActiveTrade: (id: string) =>
         set((state) => ({
@@ -100,10 +121,37 @@ export const useStore = create<StoreState>()(
         })),
 
       resetSessionState: () =>
-        set({ sessionState: { ...defaultSessionState, sessionDate: new Date().toISOString().split('T')[0] } }),
+        set({
+          sessionState: {
+            ...defaultSessionState,
+            sessionDate: new Date().toISOString().split('T')[0],
+          },
+        }),
     }),
     {
       name: 'fxscalper-storage',
+      partialize: (state) => ({
+        // Don't persist settings to localStorage - only sessionState and other data
+        selectedPair: state.selectedPair,
+        journalEntries: state.journalEntries,
+        activeTrades: state.activeTrades,
+        sessionState: state.sessionState,
+      }),
+      merge: (persistedState: any, currentState: StoreState) => ({
+        ...currentState,
+        ...persistedState,
+        // Ensure sessionState has all required fields with defaults
+        sessionState: {
+          ...defaultSessionState,
+          ...persistedState?.sessionState,
+        },
+      }),
     }
   )
 );
+
+// Initialize settings from MongoDB on app startup
+export const initializeSettings = async () => {
+  const settings = await loadSettings();
+  useStore.setState({ settings });
+};

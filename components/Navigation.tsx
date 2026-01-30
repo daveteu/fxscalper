@@ -2,13 +2,14 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Settings, 
-  Calculator, 
-  CheckSquare, 
-  BookOpen, 
-  TrendingUp 
+import {
+  LayoutDashboard,
+  Settings,
+  Calculator,
+  CheckSquare,
+  BookOpen,
+  TrendingUp,
+  Calendar,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,8 +17,9 @@ const navItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/trade', label: 'Trade', icon: TrendingUp },
   { href: '/calculator', label: 'Calculator', icon: Calculator },
-  { href: '/checklist', label: 'Checklist', icon: CheckSquare },
+  { href: '/checklist', label: 'System', icon: CheckSquare },
   { href: '/journal', label: 'Journal', icon: BookOpen },
+  { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -36,7 +38,7 @@ export function Navigation() {
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
-              
+
               return (
                 <Link
                   key={item.href}

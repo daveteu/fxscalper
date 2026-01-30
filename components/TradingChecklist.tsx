@@ -54,13 +54,16 @@ export function TradingChecklist() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm text-muted-foreground">
-              Progress: {completedCount}/{totalCount} ({completionPercent.toFixed(0)}%)
+              Progress: {completedCount}/{totalCount} (
+              {completionPercent.toFixed(0)}%)
             </span>
-            {completionPercent >= 80 ? (
-              <span className="text-sm font-medium text-green-500">Ready to Trade</span>
+            {completionPercent >= 60 ? (
+              <span className="text-sm font-medium text-green-500">
+                Ready to Trade
+              </span>
             ) : (
               <span className="text-sm font-medium text-yellow-500">
-                Need {Math.ceil((totalCount * 0.8) - completedCount)} more
+                Need {Math.ceil(totalCount * 0.6 - completedCount)} more
               </span>
             )}
           </div>

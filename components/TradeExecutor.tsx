@@ -7,7 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, TrendingUp, TrendingDown, Loader2, Sparkles } from 'lucide-react';
+import {
+  AlertCircle,
+  TrendingUp,
+  TrendingDown,
+  Loader2,
+  Sparkles,
+} from 'lucide-react';
 import { useOandaPrice } from '@/hooks/useOandaPrice';
 import { createOandaClient } from '@/lib/oanda';
 import { useStore } from '@/lib/store';
@@ -21,7 +27,7 @@ interface TradeExecutorProps {
 }
 
 // Constants
-const CHECKLIST_COMPLETION_THRESHOLD = 0.8; // 80% of checklist items must be completed
+const CHECKLIST_COMPLETION_THRESHOLD = 0.6; // 60% of checklist items must be completed
 
 export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
   const { price, loading: priceLoading } = useOandaPrice(pair);
@@ -34,22 +40,31 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
   const [success, setSuccess] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<TradeAnalysisResult | null>(null);
-  const [tradeDirection, setTradeDirection] = useState<'long' | 'short'>('long');
+  const [tradeDirection, setTradeDirection] = useState<'long' | 'short'>(
+    'long'
+  );
 
   // Validation
   const sessionActive = isActiveSession();
-  const checklistCompletion = (checklist.filter((i) => i.checked).length / checklist.length);
+  const checklistCompletion =
+    checklist.filter((i) => i.checked).length / checklist.length;
   const checklistValid = checklistCompletion >= CHECKLIST_COMPLETION_THRESHOLD;
-  
+
   const slNum = parseFloat(stopLossPips) || 0;
   const tpNum = parseFloat(takeProfitPips) || 0;
   const unitsNum = parseFloat(units) || 0;
-  
-  const slValid = slNum >= 5 && slNum <= 8;
-  const tpValid = tpNum >= (slNum * 1.5) && tpNum <= (slNum * 2);
 
-  const canTrade = sessionActive && checklistValid && slValid && tpValid && unitsNum > 0 && 
-                   settings.oandaApiKey && settings.oandaAccountId;
+  const slValid = slNum >= 5 && slNum <= 8;
+  const tpValid = tpNum >= slNum * 1.5 && tpNum <= slNum * 2;
+
+  const canTrade =
+    sessionActive &&
+    checklistValid &&
+    slValid &&
+    tpValid &&
+    unitsNum > 0 &&
+    settings.oandaApiKey &&
+    settings.oandaAccountId;
 
   const handleAnalyze = async (direction: 'long' | 'short') => {
     if (!settings.openaiApiKey) {
@@ -96,7 +111,7 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
       );
 
       const tradeUnits = side === 'buy' ? unitsNum : -unitsNum;
-      
+
       const trade = await client.createMarketOrder(
         pair,
         tradeUnits,
@@ -105,8 +120,10 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
       );
 
       addActiveTrade(trade);
-      setSuccess(`Trade executed: ${side.toUpperCase()} ${Math.abs(tradeUnits)} units at ${trade.price}`);
-      
+      setSuccess(
+        `Trade executed: ${side.toUpperCase()} ${Math.abs(tradeUnits)} units at ${trade.price}`
+      );
+
       // Clear form
       setUnits('');
       setAnalysis(null);
@@ -130,20 +147,28 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
         {/* Current Price */}
         <div className="p-4 bg-muted/50 rounded-lg">
           {priceLoading ? (
-            <div className="text-center text-muted-foreground">Loading price...</div>
+            <div className="text-center text-muted-foreground">
+              Loading price...
+            </div>
           ) : price ? (
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-sm text-muted-foreground">Bid</div>
-                <div className="text-2xl font-bold text-sell">{price.bid.toFixed(5)}</div>
+                <div className="text-2xl font-bold text-sell">
+                  {price.bid.toFixed(5)}
+                </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">Ask</div>
-                <div className="text-2xl font-bold text-buy">{price.ask.toFixed(5)}</div>
+                <div className="text-2xl font-bold text-buy">
+                  {price.ask.toFixed(5)}
+                </div>
               </div>
             </div>
           ) : (
-            <div className="text-center text-muted-foreground">Price unavailable</div>
+            <div className="text-center text-muted-foreground">
+              Price unavailable
+            </div>
           )}
         </div>
 
@@ -153,7 +178,8 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Session Closed</AlertTitle>
             <AlertDescription>
-              Trading is only allowed during London (15:00-18:00 SGT) or NY (20:00-23:00 SGT) sessions.
+              Trading is only allowed during active trading session (15:00-23:30
+              SGT).
             </AlertDescription>
           </Alert>
         )}
@@ -163,7 +189,8 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Checklist Incomplete</AlertTitle>
             <AlertDescription>
-              Complete at least 80% of the checklist before trading. Current: {(checklistCompletion * 100).toFixed(0)}%
+              Complete at least 60% of the checklist before trading. Current:{' '}
+              {(checklistCompletion * 100).toFixed(0)}%
             </AlertDescription>
           </Alert>
         )}
@@ -188,7 +215,9 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
               placeholder="7"
               className={!slValid ? 'border-red-500' : ''}
             />
-            {!slValid && <p className="text-xs text-red-500">Must be 5-8 pips</p>}
+            {!slValid && (
+              <p className="text-xs text-red-500">Must be 5-8 pips</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Take Profit (pips)</Label>
@@ -206,9 +235,9 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
         {/* AI Analysis */}
         {settings.openaiApiKey && (
           <div className="grid grid-cols-2 gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => handleAnalyze('long')} 
+            <Button
+              variant="outline"
+              onClick={() => handleAnalyze('long')}
               disabled={analyzing}
             >
               {analyzing && tradeDirection === 'long' ? (
@@ -223,9 +252,9 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
                 </>
               )}
             </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => handleAnalyze('short')} 
+            <Button
+              variant="outline"
+              onClick={() => handleAnalyze('short')}
               disabled={analyzing}
             >
               {analyzing && tradeDirection === 'short' ? (
@@ -246,8 +275,12 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
         {analysis && (
           <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg space-y-2">
             <div className="flex items-center justify-between">
-              <span className="font-medium">AI Score: {analysis.score}/100</span>
-              <Badge>{analysis.recommendation.replace('_', ' ').toUpperCase()}</Badge>
+              <span className="font-medium">
+                AI Score: {analysis.score}/100
+              </span>
+              <Badge>
+                {analysis.recommendation.replace('_', ' ').toUpperCase()}
+              </Badge>
             </div>
             <div>
               <div className="text-sm font-medium mb-1">Reasons:</div>
@@ -259,7 +292,9 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
             </div>
             {analysis.warnings.length > 0 && (
               <div>
-                <div className="text-sm font-medium mb-1 text-yellow-500">Warnings:</div>
+                <div className="text-sm font-medium mb-1 text-yellow-500">
+                  Warnings:
+                </div>
                 <ul className="text-sm text-muted-foreground list-disc list-inside">
                   {analysis.warnings.map((warning, i) => (
                     <li key={i}>{warning}</li>
@@ -316,7 +351,9 @@ export function TradeExecutor({ pair, onTradeExecuted }: TradeExecutorProps) {
 
         {success && (
           <Alert>
-            <AlertDescription className="text-green-500">{success}</AlertDescription>
+            <AlertDescription className="text-green-500">
+              {success}
+            </AlertDescription>
           </Alert>
         )}
       </CardContent>

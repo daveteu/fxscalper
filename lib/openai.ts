@@ -39,7 +39,7 @@ Setup: ${input.setup}
 Market Conditions: ${input.marketConditions}
 
 Clean Edge Scalper Rules:
-1. Only trade during London (15:00-18:00 SGT) or NY (20:00-23:00 SGT) sessions
+1. Only trade during active trading session (15:00-23:30 SGT)
 2. Use 30m for trend, 15m for zone, 1m for trigger
 3. Risk max 0.5% per trade
 4. Stop loss 5-8 pips
@@ -67,14 +67,15 @@ Format response as JSON:
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'gpt-4-turbo',
         messages: [
           {
             role: 'system',
-            content: 'You are an expert forex trading analyst specializing in scalping strategies.',
+            content:
+              'You are an expert forex trading analyst specializing in scalping strategies.',
           },
           {
             role: 'user',
@@ -93,11 +94,11 @@ Format response as JSON:
 
     const data = await response.json();
     const content = data.choices[0].message.content;
-    
+
     // Parse JSON response with error handling
     try {
       const analysis = JSON.parse(content);
-      
+
       return {
         score: analysis.score || 0,
         recommendation: analysis.recommendation || 'neutral',

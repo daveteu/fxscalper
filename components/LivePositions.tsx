@@ -5,22 +5,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Loader2, X, RefreshCw, AlertCircle } from 'lucide-react';
 import { usePositions } from '@/hooks/usePositions';
 import { createOandaClient } from '@/lib/oanda';
 import { useStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/calculator';
+import { updateConsecutiveLosses } from '@/lib/sessionTracking';
 
 export function LivePositions() {
   const { positions, loading, error, refresh } = usePositions();
-  const { settings, removeActiveTrade, addJournalEntry } = useStore();
+  const {
+    settings,
+    setActiveTrades,
+    addJournalEntry,
+    sessionState,
+    updateSessionState,
+  } = useStore();
   const [closing, setClosing] = useState<string | null>(null);
   const [closeError, setCloseError] = useState<string | null>(null);
 
   const totalPnL = positions.reduce((sum, pos) => sum + pos.unrealizedPL, 0);
 
-  const handleClose = async (position: typeof positions[0]) => {
+  const handleClose = async (position: (typeof positions)[0]) => {
     setClosing(position.id);
     setCloseError(null);
 
@@ -31,7 +45,44 @@ export function LivePositions() {
         settings.accountType
       );
 
-      await client.closePosition(position.instrument);
+      // Close by trade ID instead of instrument to avoid "position does not exist" errors
+      await client.closeTrade(position.id);
+
+      // Determine trade result
+      const result =
+        position.unrealizedPL > 0
+          ? 'win'
+          : position.unrealizedPL < 0
+            ? 'loss'
+            : 'breakeven';
+
+      // Update per-pair consecutive losses for 3-strike rule
+      const { losses: updatedLosses, blockUntil } = updateConsecutiveLosses(
+        sessionState.consecutiveLossesPerPair || {},
+        position.instrument,
+        result
+      );
+
+      const updates: any = {
+        consecutiveLossesPerPair: updatedLosses,
+      };
+
+      // If pair hit 3 losses, block it for 60 minutes
+      if (blockUntil) {
+        const pairKey = position.instrument.replace('/', '_');
+        updates.pairBlockedUntil = {
+          ...(sessionState.pairBlockedUntil || {}),
+          [pairKey]: blockUntil,
+        };
+      } else if (result === 'win') {
+        // Clear block on win
+        const pairKey = position.instrument.replace('/', '_');
+        const newBlocks = { ...(sessionState.pairBlockedUntil || {}) };
+        delete newBlocks[pairKey];
+        updates.pairBlockedUntil = newBlocks;
+      }
+
+      updateSessionState(updates);
 
       // Add to journal
       const now = new Date().toISOString();
@@ -46,20 +97,28 @@ export function LivePositions() {
         units: position.units,
         stopLoss: position.stopLoss || 0,
         takeProfit: position.takeProfit || 0,
-        result: position.unrealizedPL > 0 ? 'win' : position.unrealizedPL < 0 ? 'loss' : 'breakeven',
+        result:
+          position.unrealizedPL > 0
+            ? 'win'
+            : position.unrealizedPL < 0
+              ? 'loss'
+              : 'breakeven',
         pnl: position.unrealizedPL,
-        pnlPips: position.unrealizedPLPips,
+        pnlPips: position.unrealizedPL,
         rMultiple: 0, // Calculate based on actual SL
         setup: 'Live trade',
         notes: '',
       });
 
-      removeActiveTrade(position.id);
-      
-      // Refresh positions
-      refresh();
+      // Immediately remove from activeTrades to unblock duplicate pair check
+      setActiveTrades([]);
+
+      // Refresh positions from Oanda (will re-sync activeTrades)
+      await refresh();
     } catch (err) {
-      setCloseError(err instanceof Error ? err.message : 'Failed to close position');
+      setCloseError(
+        err instanceof Error ? err.message : 'Failed to close position'
+      );
     } finally {
       setClosing(null);
     }
@@ -133,9 +192,15 @@ export function LivePositions() {
                 <TableBody>
                   {positions.map((position) => (
                     <TableRow key={position.id}>
-                      <TableCell className="font-medium">{position.instrument}</TableCell>
+                      <TableCell className="font-medium">
+                        {position.instrument}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant={position.side === 'long' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            position.side === 'long' ? 'default' : 'secondary'
+                          }
+                        >
                           {position.side.toUpperCase()}
                         </Badge>
                       </TableCell>
@@ -143,20 +208,66 @@ export function LivePositions() {
                       <TableCell>{position.entryPrice.toFixed(5)}</TableCell>
                       <TableCell>{position.currentPrice.toFixed(5)}</TableCell>
                       <TableCell>
-                        <span className={position.unrealizedPL >= 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>
+                        <span
+                          className={
+                            position.unrealizedPL >= 0
+                              ? 'text-green-500 font-bold'
+                              : 'text-red-500 font-bold'
+                          }
+                        >
                           {formatCurrency(position.unrealizedPL)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className={position.unrealizedPLPips >= 0 ? 'text-green-500 font-bold' : 'text-red-500 font-bold'}>
+                        <span
+                          className={
+                            position.unrealizedPLPips >= 0
+                              ? 'text-green-500 font-bold'
+                              : 'text-red-500 font-bold'
+                          }
+                        >
                           {position.unrealizedPLPips.toFixed(1)}
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {position.stopLoss?.toFixed(5) || '-'}
+                        {position.stopLoss
+                          ? (() => {
+                              const pipSize = position.instrument.includes(
+                                'JPY'
+                              )
+                                ? 0.01
+                                : 0.0001;
+                              const slPips =
+                                position.side === 'long'
+                                  ? Math.abs(
+                                      position.entryPrice - position.stopLoss
+                                    ) / pipSize
+                                  : Math.abs(
+                                      position.stopLoss - position.entryPrice
+                                    ) / pipSize;
+                              return `${slPips.toFixed(1)}`;
+                            })()
+                          : '-'}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {position.takeProfit?.toFixed(5) || '-'}
+                        {position.takeProfit
+                          ? (() => {
+                              const pipSize = position.instrument.includes(
+                                'JPY'
+                              )
+                                ? 0.01
+                                : 0.0001;
+                              const tpPips =
+                                position.side === 'long'
+                                  ? Math.abs(
+                                      position.takeProfit - position.entryPrice
+                                    ) / pipSize
+                                  : Math.abs(
+                                      position.entryPrice - position.takeProfit
+                                    ) / pipSize;
+                              return `${tpPips.toFixed(1)}`;
+                            })()
+                          : '-'}
                       </TableCell>
                       <TableCell>
                         <Button
@@ -181,8 +292,12 @@ export function LivePositions() {
             {/* Total P&L */}
             <div className="mt-4 p-4 bg-muted/50 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-lg font-medium">Total Unrealized P&L:</span>
-                <span className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                <span className="text-lg font-medium">
+                  Total Unrealized P&L:
+                </span>
+                <span
+                  className={`text-2xl font-bold ${totalPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}
+                >
                   {formatCurrency(totalPnL)}
                 </span>
               </div>
